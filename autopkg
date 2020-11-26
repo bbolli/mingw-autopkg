@@ -1,0 +1,39 @@
+#! /bin/sh
+
+# Auto-update script for simple MinGW packages where the upstream source
+# is on GitHub.
+
+die() { echo "$@" >&2; exit 1; }
+
+usage() {
+    echo "\
+Usage: $0 <account>/<project>
+
+E.g. '$0 fmtlib/fmt'"
+    exit $1
+}
+
+[ -z "$1" ] && usage 2
+[ $1 = -h ] && usage
+case $1 in
+    */*) ;;
+    *) usage 2 ;;
+esac
+[ -f PKGBUILD ] || die "PKGBUILD not found; not in a package directory?"
+
+set -eux -o pipefail
+
+rm -rf pkg/ src/
+
+tag=$(curl -sS https://api.github.com/repos/$1/releases/latest |
+    jq -r .tag_name | sed s/^v//)
+sed -i -e "/^pkgver=/s/.*/pkgver=$tag/" PKGBUILD
+
+sums="$(makepkg -g)"
+sed -i -e "/^sha256sums=/s/.*/$sums/" PKGBUILD
+
+makepkg-mingw -c
+
+proj=${1#*/}
+git checkout -b $proj-$tag master
+git commit -a -m"$proj: update to $tag"
