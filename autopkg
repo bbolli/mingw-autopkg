@@ -29,5 +29,6 @@ sed -i -e "/^sha256sums=/s/.*/$sums/" PKGBUILD
 
 makepkg-mingw -c
 
-git checkout -b $proj-$tag master
+git fetch -q origin
+git checkout -b $proj-$tag origin/master
 git commit -a -m"$proj: update to $tag"
