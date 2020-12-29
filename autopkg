@@ -19,6 +19,7 @@ rm -rf pkg/ src/
 
 tag=$(curl -sS https://api.github.com/repos/$user/$proj/releases/latest |
     jq -r .tag_name | sed s/^v//)
+[ "$tag" = null ] && die "couldn't find the tag of the latest release"
 sed -i -e "/^pkgver=/s/.*/pkgver=$tag/" PKGBUILD
 
 echo "building $proj-$tag from github.com/$user/$proj"
