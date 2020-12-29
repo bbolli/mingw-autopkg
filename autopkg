@@ -10,19 +10,19 @@ die() { echo "$@" >&2; exit 1; }
 [ -z "${1:-}" ] || die "no arguments expected"
 [ -f PKGBUILD ] || die "PKGBUILD not found; not in a package directory?"
 
-user=$(sed -ne '/^source=/s!.*github\.com/\([^/]*\).*!\1!p' PKGBUILD)
-[ -n "$user" ] || die "github user name not found in 'source' URL"
+gh_proj=$(sed -ne '/^source=/s!.*github\.com/\([^/]*\)/\([^/]*\).*!\1/\2!p' PKGBUILD)
+[ -n "gh_proj" ] || die "github user/project name not found in 'source' URL"
 proj=$(sed -ne '/^_realname=/s/.*=//p' PKGBUILD)
 [ -n "$proj" ] || die "project name not found in '_realname' setting"
 
 rm -rf pkg/ src/
 
-tag=$(curl -sS https://api.github.com/repos/$user/$proj/releases/latest |
+tag=$(curl -sS https://api.github.com/repos/$gh_proj/releases/latest |
     jq -r .tag_name | sed s/^v//)
 [ "$tag" = null ] && die "couldn't find the tag of the latest release"
 sed -i -e "/^pkgver=/s/.*/pkgver=$tag/" PKGBUILD
 
-echo "building $proj-$tag from github.com/$user/$proj"
+echo "building $proj-$tag from github.com/$gh_proj"
 
 sums="$(makepkg -g)"
 sed -i -e "/^sha256sums=/s/.*/$sums/" PKGBUILD
